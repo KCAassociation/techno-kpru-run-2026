@@ -1,10 +1,9 @@
 /**
  * Northern Run - Server-side Code (Code.gs)
  * Optimized for speed, reliability, and to avoid shared state bugs in Web Apps.
- * [รุ่นรวมสมบูรณ์ - ปรับปรุงโครงสร้างลิงก์ไฟล์สลิปให้แสดงผลภาพบนแชท LINE กลุ่มได้ 100%]
+ * [รุ่นรวมสมบูรณ์ - คำนวณเงิน 450/550 อัตโนมัติและแก้ดัชนีคอลัมน์สลิป AH/AI ตรงกัน 100%]
  */
 
-// 1. ข้อมูลสิทธิ์จาก LINE Developers 
 const LINE_ACCESS_TOKEN = "i+uAHn+oyCM7tDDqWLVFRDV0s/vw44+He8cqwDK+uakj7gvJBHgPrUlFZ306u4Wk3h5Wk6XF7RcB9CSVAJItH29scPP4ZiUtyCu20AMRMpJCtbXsvUhr+JpDeW3AoUPRadnvM3s/xvisp50lxmkqXgdB04t89/1O/w1cDnyilFU=";
 const LINE_GROUP_ID = "C6be883b5bf0e48f3391a15c88bdd1859";
 
@@ -88,12 +87,11 @@ function updateApplicantStatus(idCard, newStatus, htmlText) {
   return false;
 }
 
-/** บันทึกฟอร์มลงทะเบียนรายใหม่ + คำนวณยอดเงินส่งลงชีต AG อัตโนมัติ */
+/** บันทึกฟอร์มลงทะเบียนรายใหม่ + คำนวณยอดเงินส่งลงชีต AG (คอลัมน์ที่ 33) อัตโนมัติ */
 function processForm(obj) {
   var ss = SpreadsheetApp.getActive().getSheetByName("register");
   var output = {};
   
-  // คำนวณยอดเงินจากตัวเลือกรุ่นวิ่งที่ผู้สมัครเลือกเข้ามา
   var autoPrice = 0;
   if (obj.type_run && obj.type_run.indexOf("10.5") !== -1) {
     autoPrice = 550;
@@ -109,7 +107,6 @@ function processForm(obj) {
     obj.shirt, obj.size, obj.sendshirt, "'" + obj.send_address,
     new Date(), '<span class="text-primary"><i class="fa-regular fa-clock text-primary"></i> รอชำระเงิน</span>', "รอชำระเงิน",
     "", "", "", autoPrice, "" 
-    // [32] คอลัมน์ AG = ยอดเงิน, [33] คอลัมน์ AH = ลิงก์ QR Code ปล่อยว่างให้ฟังก์ชันตั้งค่าจัดการ
   ]);
   var data = ss.getRange(ss.getLastRow(), 1, 1, ss.getLastColumn()).getDisplayValues()[0];
   output.data = data;
@@ -154,7 +151,7 @@ function getDirectImageUrl(fileId) {
   return webAppUrl.indexOf('?') !== -1 ? webAppUrl + "&fileId=" + fileId : webAppUrl + "?fileId=" + fileId;
 }
 
-/** อัปโหลดสลิปใบเสร็จเงิน + แจ้งเตือนข้อความรายละเอียดแบบจัดเต็มพร้อมรูปภาพเข้า LINE */
+/** อัปโหลดสลิปใบเสร็จเงิน + บันทึกลงคอลัมน์ AI ช่องที่ 35 และยิงแจ้งเตือนกลุ่ม LINE */
 function uploadSlip(formObj) {
   try {
     var ss = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("register");
@@ -183,10 +180,9 @@ function uploadSlip(formObj) {
     }
     
     if (targetRow != -1) {
-      // เมื่อแจ้งสลิปเข้ามา ปรับสถานะรอตรวจสอบ
       ss.getRange(targetRow, 29).setValue("รอตรวจสอบ"); 
       ss.getRange(targetRow, 30).setValue('<span class="text-success fw-bold"><i class="fa-solid fa-circle-check me-1"></i> แจ้งแล้ว รอตรวจสอบ</span>'); 
-      ss.getRange(targetRow, 35).setValue(fileUrl); // ลิงก์เก็บลงคอลัมน์ AI ช่องที่ 35
+      ss.getRange(targetRow, 35).setValue(fileUrl); // บันทึกลิงกลงช่องคอลัมน์ AI ให้หน้าบ้านดักจับได้ถูกต้อง
       
       var applicantData = ss.getRange(targetRow, 1, 1, ss.getLastColumn()).getDisplayValues()[0];
       var firstName = applicantData[2] || "-";  
@@ -233,7 +229,7 @@ function sendLineMessagingAPI(textMessage) {
     "headers": { "Content-Type": "application/json", "Authorization": "Bearer " + LINE_ACCESS_TOKEN },
     "payload": JSON.stringify(postData), "muteHttpExceptions": true
   };
-  try { const response = UrlFetchApp.fetch(url, options); } catch(e) {}
+  try { UrlFetchApp.fetch(url, options); } catch(e) {}
 }
 
 function sendLineImageAPI(imageUrl) {
@@ -244,5 +240,5 @@ function sendLineImageAPI(imageUrl) {
     "headers": { "Content-Type": "application/json", "Authorization": "Bearer " + LINE_ACCESS_TOKEN },
     "payload": JSON.stringify(postData), "muteHttpExceptions": true
   };
-  try { const response = UrlFetchApp.fetch(url, options); } catch(e) {}
+  try { UrlFetchApp.fetch(url, options); } catch(e) {}
 }
