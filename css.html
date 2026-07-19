@@ -1,0 +1,321 @@
+<script>
+let currentAdminUser = "";
+
+function preventFormSubmit(){
+  var forms = document.querySelectorAll('form');
+  for (var i = 0; i < forms.length; i++){ forms[i].addEventListener('submit', function(e){ e.preventDefault(); }); }
+}
+window.addEventListener('load', preventFormSubmit);
+
+function Submit(event, obj){
+  if(event) event.preventDefault();  
+  $('#btn1').hide(); $('#btn2').show();
+  google.script.run.withFailureHandler(showError).withSuccessHandler(success).processForm(obj);
+}
+
+function showError(e) {
+  Swal.fire({ position : 'center', title: 'เกิดข้อผิดพลาด!', text: e, icon: "error" });
+  $('#btn2').hide(); $('#btn1').show();
+}
+
+function success(output){
+  document.getElementById("myForm").reset();
+  $('#btn2').hide(); $('#btn1').show();
+  Swal.fire({ position: 'center', icon: 'success', title: 'บันทึกข้อมูลเรียบร้อย', confirmButtonColor: '#B71C1C' });       
+}
+
+function openSlipModal(idCard) {
+  if(document.getElementById('mySlip')) document.getElementById('mySlip').reset(); 
+  $('#pic').hide(); 
+  
+  if(document.getElementById('slipID')) {
+    document.getElementById('slipID').value = idCard; 
+    document.getElementById('slipID').readOnly = true; 
+  }
+  
+  if(document.getElementById('modalSlip')) {
+    var myModal = new bootstrap.Modal(document.getElementById('modalSlip'));
+    myModal.show();
+  }
+}
+
+$(document).ready(function() {
+  $('#btnMainSearch').click(function() {
+    const textSearch = $('.input1').val().trim();
+    if(textSearch.length !== 13) { Swal.fire('แจ้งเตือน', 'กรุณากรอกเลขบัตรประชาชนให้ครบ 13 หลัก', 'warning'); return; }
+    
+    Swal.fire({ title: 'กำลังค้นหา...', didOpen: () => { Swal.showLoading(); } });
+    google.script.run.withSuccessHandler((res)=>{
+      Swal.close();
+      if (res && res.length > 0){
+        let html = "";
+        res.forEach((r, i)=>{
+          let displayNum = r[0] || (i + 1);
+          let fullName = r[2] + ' ' + r[3]; // คอลัมน์ C + D
+          let idCard = r[4] || textSearch;  // คอลัมน์ E
+          
+          let typeRun = r[21] || '-';        // คอลัมน์ V (รุ่นที่สมัคร)
+          let statusStr = r[28] || '';       // คอลัมน์ AC (ข้อความสถานะธรรมดาหลังบ้าน)
+          let qrPaymentUrl = r[33] || '';   // คอลัมน์ AH (คิวอาร์โค้ด)
+          let slipUrl = r[34] || '';        // คอลัมน์ AI (ลิงก์หลักฐานสลิปโอนเงิน)
+
+          // 💰 ตรวจเช็คยอดเงินสมัครให้ตรงตามระยะการแข่งขันแบบ 100%
+          let totalAmount = r[32];
+          if (!totalAmount || totalAmount === "0" || totalAmount === "0.00" || totalAmount === "") {
+            if (typeRun.indexOf("10.5") !== -1) { totalAmount = "550.00"; }
+            else if (typeRun.indexOf("5.5") !== -1) { totalAmount = "450.00"; }
+            else { totalAmount = "0.00"; }
+          } else {
+            // ปรับฟอร์แมตกรณีดึงเลขจำนวนเต็มขึ้นมาแสดงให้มีทศนิยมสวยงาม
+            totalAmount = parseFloat(totalAmount).toFixed(2);
+          }
+          
+          let actionBtn = "";
+          let currentStatusHtml = "";
+
+          // 🟢 เงื่อนไขการปรับสถานะสีเขียว และซ่อนปุ่มตามคำสั่งพี่เป๊ะ ๆ
+          if (statusStr === "การสมัครสำเร็จ") {
+            // เคสแอดมินกดอนุมัติแล้ว -> เขียว "การสมัครสำเร็จ" ล็อกปุ่ม
+            currentStatusHtml = `<span class="text-success fw-bold"><i class="fa-solid fa-circle-check me-1"></i> การสมัครสำเร็จ</span>`;
+            actionBtn = `<div class="small text-muted mt-2 text-center" style="font-size: 11px;"><i class="fa-solid fa-lock me-1"></i> ล็อกการเข้าถึงหลักฐานสลิป</div>`;
+          } else if (slipUrl && slipUrl.trim() !== "") {
+            // เคสอัปโหลดสลิปแล้วแต่อยู่ระหว่างรออนุมัติ -> เขียว "แจ้งแล้ว รอตรวจสอบ" ล็อกปุ่ม
+            currentStatusHtml = `<span class="text-success fw-bold"><i class="fa-solid fa-circle-check me-1"></i> แจ้งแล้ว รอตรวจสอบ</span>`;
+            actionBtn = `<div class="small text-muted mt-2 text-center" style="font-size: 11px;"><i class="fa-solid fa-lock me-1"></i> ล็อกการเข้าถึงหลักฐานสลิป</div>`;
+          } else {
+            // ยังไม่โอนเงิน -> แสดงผลสัญลักษณ์ รอชำระเงิน และเปิดปุ่มเหลืองให้คลิกส่ง
+            currentStatusHtml = r[29] || '-'; // คอลัมน์ AD
+            actionBtn = `<button type="button" class="btn btn-sm btn-warning mt-2 w-100" onclick="openSlipModal('${idCard}')"><i class="fa-solid fa-cloud-arrow-up me-1"></i> แจ้งการโอนเงิน</button>`;
+          }
+
+          html += `<tr>
+            <td class="text-center">${displayNum}</td>
+            <td>
+              <h5 class="mb-1">${fullName}</h5>
+              <div class="small text-danger fw-bold"><i class="fa-solid fa-person-running me-1"></i>${typeRun}</div>
+            </td>
+            <td class="text-center"><div>${currentStatusHtml}</div>${actionBtn}</td>
+            <td class="text-center">
+              <div class="small fw-bold text-dark mb-1" style="font-size: 13px;">ธ.ออมสิน : 020-487-366-641</div>
+              <div class="small text-muted mb-2" style="font-size: 11px; line-height: 1.2;">โครงการ วิ่งเติมฝัน Techno kpru run 2026</div>
+              <img src='${qrPaymentUrl}' width="110px" onerror="this.style.display='none';"><br>
+              <h5 class="text-danger mt-1 fw-bold">${totalAmount} บาท</h5>
+            </td>
+          </tr>`;
+        });
+        if(document.getElementById("bodyTable")) document.getElementById("bodyTable").innerHTML = html;
+      } else {
+        Swal.fire('ไม่พบข้อมูล', 'โปรดตรวจสอบเลขบัตรประชาชนอีกครั้ง', 'error');
+      }
+    }).filterData(textSearch);
+  });
+});
+
+/** ==================== หน้าการจัดการระบบ ADMIN ==================== */
+function formLogin() {
+  Swal.fire({
+    title: 'เข้าสู่ระบบผู้ดูแล',
+    html: `<input type="text" id="swal-input1" class="swal2-input" placeholder="ชื่อผู้ใช้งาน">
+           <input type="password" id="swal-input2" class="swal2-input" placeholder="รหัสผ่าน">`,
+    focusConfirm: false,
+    confirmButtonText: 'เข้าสู่ระบบ',
+    confirmButtonColor: '#B71C1C',
+    showCancelButton: true,
+    cancelButtonText: 'ยกเลิก',
+    preConfirm: () => { 
+      const username = document.getElementById('swal-input1').value.trim();
+      const password = document.getElementById('swal-input2').value.trim();
+      if (!username || !password) {
+        Swal.showValidationMessage('กรุณากรอกข้อมูลให้ครบถ้วน');
+        return false;
+      }
+      return [username, password];
+    }
+  }).then((result) => {
+    if (result.isConfirmed) {
+      Swal.fire({
+        title: 'กำลังเข้าสู่ระบบ...',
+        text: 'โปรดรอสักครู่ ระบบกำลังตรวจสอบสิทธิ์ผู้ดูแล',
+        allowOutsideClick: false,
+        didOpen: () => { Swal.showLoading(); }
+      });
+
+      google.script.run.withSuccessHandler(function(adminName) {
+        Swal.close();
+        if(adminName !== "null") {
+          currentAdminUser = adminName;
+          $('#btnlogin').hide(); 
+          $('#adminControlArea').show(); 
+          $('#msg-name').text(adminName); 
+          
+          Swal.fire({
+            position: 'center',
+            icon: 'success',
+            title: 'ยินดีต้อนรับคุณ ' + adminName,
+            text: 'ระบบกำลังนำคุณเข้าสู่หน้าต่างผู้ดูแลหลังบ้าน',
+            showConfirmButton: false,
+            timer: 1500
+          });
+          formAdminPanel(); 
+        } else {
+          Swal.fire('เข้าสู่ระบบล้มเหลว', 'ชื่อผู้ใช้งานหรือรหัสผ่านไม่ถูกต้อง กรุณาลองใหม่อีกครั้ง', 'error');
+        }
+      }).withFailureHandler(function(err) {
+        Swal.close();
+        Swal.fire('เกิดข้อผิดพลาดจากระบบ', err.message, 'error');
+      }).checkLogin(result.value[0], result.value[1]);
+    }
+  });
+}
+
+function logout() { 
+  currentAdminUser = ""; 
+  $('#adminControlArea').hide(); 
+  $('#btnlogin').show(); 
+  restoreUserLayout();
+  formadd(); 
+}
+
+function restoreUserLayout() {
+  $('#leftSidebar').show();
+  $('#navTabs').show();
+  $('#rightMainContent').removeClass('col-12').addClass('col-lg-7 col-md-7');
+}
+
+function formAdminPanel() {
+  $('#leftSidebar').hide();
+  $('#navTabs').hide();
+  $('#rightMainContent').removeClass('col-lg-7 col-md-7').addClass('col-12');
+  
+  if(document.getElementById("form_add")) document.getElementById("form_add").style.display = "none";
+  if(document.getElementById("form_search")) document.getElementById("form_search").style.display = "none";
+  if(document.getElementById("form_admin_panel")) document.getElementById("form_admin_panel").style.display = "block";
+  loadAdminTable();
+}
+
+function loadAdminTable() {
+  $("#adminTableBody").html('<tr><td colspan="5" class="text-center">กำลังดึงข้อมูล...</td></tr>');
+  google.script.run.withSuccessHandler(function(data) {
+    let html = "";
+    data.forEach((r) => {
+      let idCard = r[4]; 
+      let fullName = r[2] + " " + r[3]; 
+      
+      // 📊 [แก้ไขดัชนีจุดนี้]: ปรับเลขดัชนีคอลัมน์ฝั่ง Admin ให้ตรงกับฐานข้อมูลเป๊ะๆ
+      let typeRun = r[21] || '-';        // คอลัมน์ V (รุ่นที่สมัคร)
+      let statusStr = r[28] || '';       // คอลัมน์ AC (สถานะข้อความธรรมดา)
+      let slipUrl = r[33] || '';         // คอลัมน์ AH (ลิงก์สลิปโอนเงินใบจริง)
+
+      // 💰 ดักคำนวณยอดเงินโชว์หน้าแอดมินให้ถูกต้องตรงกับระยะวิ่งจริง เผื่อเคสเก่าเป็น 0.00
+      let totalAmount = r[32];
+      if (!totalAmount || totalAmount === "0" || totalAmount === "0.00" || totalAmount === "") {
+        if (typeRun.indexOf("10.5") !== -1) { totalAmount = "550"; }
+        else if (typeRun.indexOf("5.5") !== -1) { totalAmount = "450"; }
+        else { totalAmount = "0"; }
+      }
+
+      // ตรวจสอบคอลัมน์ไฟล์สลิปหลักฐาน
+      let slipColumn = (slipUrl && slipUrl.trim() !== "") 
+        ? `<a href="${slipUrl}" target="_blank" class="btn btn-sm btn-info text-white"><i class="fa-solid fa-file-image me-1"></i> เปิดดูสลิปดิบ</a>` 
+        : '<span class="text-muted"><i class="fa-solid fa-circle-xmark text-danger me-1"></i>ยังไม่มีไฟล์</span>';
+      
+      let actionColumn = "";
+      
+      // เงื่อนไขปุ่มจัดการอนุมัติ/ปฏิเสธ ของ Admin
+      if(statusStr === "การสมัครสำเร็จ" || statusStr === "สลิปไม่ถูกต้อง") {
+        actionColumn = `<span class="badge bg-secondary">${statusStr}</span>`;
+      } else {
+        if(slipUrl && slipUrl.trim() !== "") {
+          actionColumn = `
+            <button class="btn btn-sm btn-success me-1" onclick="verifyAdminAction('${idCard}', 'approve')">อนุมัติ</button>
+            <button class="btn btn-sm btn-danger" onclick="verifyAdminAction('${idCard}', 'reject')">ปฏิเสธ</button>
+          `;
+        } else {
+          actionColumn = `
+            <button class="btn btn-sm btn-success me-1" disabled style="cursor: not-allowed;" title="ไม่พบไฟล์หลักฐานสลิป บังคับตรวจหลักฐานก่อนอนุมัติ"><i class="fa-solid fa-lock me-1"></i>อนุมัติ</button>
+            <span class="badge bg-warning text-dark d-block mt-1">⚠️ บังคับตรวจ (รอสลิป)</span>
+          `;
+        }
+      }
+
+      html += `<tr>
+        <td>${fullName}<br><small class="text-muted">ID: ${idCard}</small></td>
+        <td>${typeRun}</td>
+        <td class="fw-bold text-danger">${totalAmount} บ.</td>
+        <td class="text-center">${slipColumn}</td>
+        <td class="text-center">${actionColumn}</td>
+      </tr>`;
+    });
+    $("#adminTableBody").html(html);
+  }).getAdminData();
+}
+
+function verifyAdminAction(idCard, action) {
+  let statusText = action === 'approve' ? 'การสมัครสำเร็จ' : 'สลิปไม่ถูกต้อง';
+  let htmlLabel = action === 'approve' 
+    ? '<span class="text-success"><i class="fa-solid fa-circle-check text-success"></i> การสมัครสำเร็จ</span>'
+    : '<span class="text-warning"><i class="fa-solid fa-triangle-exclamation text-warning"></i> สลิปไม่ถูกต้อง</span>';
+    
+  Swal.fire({ 
+    title: 'ยืนยันความถูกต้อง?', 
+    text: `ต้องการบันทึกสถานะผู้สมัครรายนี้เป็น [${statusText}] หรือไม่?`, 
+    icon: 'question', 
+    showCancelButton: true, 
+    confirmButtonColor: '#B71C1C',
+    confirmButtonText: 'OK',
+    cancelButtonText: 'Cancel'
+  }).then((res) => {
+    if(res && (res.isConfirmed || res.value)) {
+      
+      Swal.fire({
+        title: 'กำลังบันทึกข้อมูล...',
+        text: 'โปรดรอสักครู่ ระบบกำลังปรับปรุงแผ่นงานหลังบ้าน',
+        allowOutsideClick: false,
+        didOpen: () => { Swal.showLoading(); }
+      });
+
+      google.script.run
+        .withFailureHandler(function(err) {
+          Swal.close();
+          Swal.fire('บันทึกล้มเหลว', err.message, 'error');
+        })
+        .withSuccessHandler(function() {
+          Swal.close(); 
+          
+          Swal.fire({
+            position: 'center',
+            icon: 'success',
+            title: 'ปรับปรุงสถานะสำเร็จ',
+            text: `เปลี่ยนสถานะเป็น [${statusText}] เรียบร้อยแล้ว`,
+            showConfirmButton: false,
+            timer: 1500
+          });
+          
+          loadAdminTable(); 
+        })
+        .updateApplicantStatus(idCard, statusText, htmlLabel);
+    }
+  });
+}
+
+function clearText(){ $('.input1').val(""); $("#bodyTable").html(""); }
+function formadd() { restoreUserLayout(); $("#form_add").show(); $("#form_search").hide(); $("#form_admin_panel").hide(); }
+function formsearch() { restoreUserLayout(); if(document.getElementById("blog")) document.getElementById("blog").checked = true; $("#form_add").hide(); $("#form_search").show(); $("#form_admin_panel").hide(); clearText(); }
+
+function fileValidation(){
+  $('#pic').show();
+  var fileInput = document.getElementById('myFile');
+  var filePath = fileInput.value;
+  var allowedExtensions = /(\.jpg|\.jpeg|\.png|\.gif)$/i;
+  if(!allowedExtensions.exec(filePath)){
+     Swal.fire('ข้อความเตือน', 'กรุณาแนบไฟล์ "รูปภาพ" (.jpg, .png) เท่านั้น!', 'error');
+      fileInput.value = ''; $('#pic').hide(); return false;
+  } else {
+      if (fileInput.files && fileInput.files[0]) {
+          var reader = new FileReader();
+          reader.onload = function(e) { document.getElementById('pic').src = e.target.result; };
+          reader.readAsDataURL(fileInput.files[0]);
+      }
+  }
+}
+</script>

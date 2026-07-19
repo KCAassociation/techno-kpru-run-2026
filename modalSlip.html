@@ -1,0 +1,74 @@
+<div class="modal fade" id="modalSlip" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content" style="border-radius: 10px; overflow: hidden;">
+      <div class="modal-header text-dark bg-warning">
+        <h5 class="modal-title fw-bold"><i class='fa-solid fa-money-bill-transfer me-2'></i>แนบสลิปแจ้งชำระเงิน</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <form class="row g-3" id="mySlip" onsubmit="updateSlip(event, this)">
+          <div class="col-12">
+            <div class="form-group mb-2">
+              <label class="form-label fw-bold">เลขบัตรประชาชนผู้สมัคร</label>
+              <input type="text" class="form-control text-center bg-light" id="slipID" name="slipID" required readonly>
+            </div>
+            <div class="form-group mb-3">
+              <label class="form-label fw-bold">เลือกไฟล์สลิปธนาคาร (.jpg, .png)</label>
+              <input type="file" class="form-control" id="myFile" name="myFile" onchange="fileValidation()" required>
+            </div>
+            <div class="text-center my-2">
+              <img src="" id="pic" style="max-width: 100%; max-height: 250px; display: none; border-radius: 5px;">
+            </div>
+          </div>
+          <div class="col-12 text-end">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">ยกเลิก</button>
+            <button type="submit" class="btn btn-success px-4" id="btnSlipSubmit">ส่งหลักฐาน</button>
+            <button class="btn btn-primary" id="btnSlipLoading" type="button" disabled style="display: none"><span class="spinner-grow spinner-grow-sm"></span> กำลังบันทึกสลิป...</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+function updateSlip(event, formObj) { 
+    if(event) event.preventDefault();
+    $('#btnSlipSubmit').hide(); $('#btnSlipLoading').show();
+    
+    google.script.run
+      .withSuccessHandler(function(res) {
+          $('#btnSlipSubmit').show(); 
+          $('#btnSlipLoading').hide();
+          
+          var modalElement = document.getElementById('modalSlip');
+          var modal = bootstrap.Modal.getInstance(modalElement) || new bootstrap.Modal(modalElement);
+          if(modal) modal.hide();
+          
+          document.getElementById("mySlip").reset(); 
+          $('#pic').hide();
+          
+          Swal.fire({
+            position: 'center',
+            icon: 'success',
+            title: 'อัปโหลดสลิปสำเร็จ!',
+            text: 'ส่งหลักฐานแจ้งชำระเงินเรียบร้อยแล้ว ระบบกำลังอัปเดตสถานะของคุณ',
+            confirmButtonColor: '#B71C1C',
+            confirmButtonText: 'ตกลง'
+          }).then((result) => {
+            if (result.isConfirmed) {
+              var currentSearchTxt = document.getElementById('searchText').value;
+              if(currentSearchTxt && currentSearchTxt.trim() !== "") {
+                 $('#btnMainSearch').click(); 
+              }
+            }
+          });
+      })
+      .withFailureHandler(function(err){
+          Swal.fire('อัปโหลดล้มเหลว', err.message, 'error');
+          $('#btnSlipSubmit').show(); 
+          $('#btnSlipLoading').hide();
+      })
+      .uploadSlip(formObj);
+}
+</script>

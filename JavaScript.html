@@ -1,0 +1,29 @@
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@300;400;500;700&display=swap" rel="stylesheet">
+
+<style>
+  body { background: #F9F9F9; }
+  * { font-family: 'Noto Sans Thai', sans-serif; box-sizing: border-box; }
+  a { color: #C00000; text-decoration: none; font-weight: 500; }
+  a:hover { color: #A00000; text-decoration: underline; }
+  input, select, textarea { border-radius: 6px !important; border: 1px solid #D6D6D6 !important; height: 40px; }
+  textarea { height: auto !important; }
+  input:focus, select:focus, textarea:focus { border-color: #D32F2F !important; box-shadow: 0 0 0 0.25rem rgba(211, 47, 47, 0.25) !important; }
+  
+  .btn-success { background-color: #D32F2F !important; border-color: #D32F2F !important; color: #FFF !important; }
+  .btn-success:hover { background-color: #B71C1C !important; }
+  .btn-warning { background-color: #FBC02D !important; border-color: #FBC02D !important; color: #000 !important; }
+  .btn-warning:hover { background-color: #F9A825 !important; }
+  
+  nav { height: 50px; border-radius: 5px; display: flex; text-align: center; position: relative; background: #fff; box-shadow: 0 0 5px rgba(0, 0, 0, 0.15); }
+  nav label { width: 100%; height: 100%; line-height: 50px; font-size: 16px; font-weight: 600; color: #B71C1C; position: relative; z-index: 2; cursor: pointer; }
+  nav .slider { position: absolute; height: 100%; width: 50%; background: #B71C1C; left: 0; top: 0; border-radius: 5px; transition: all 0.4s ease; z-index: 1; }
+  
+  #home:checked~nav label.home, #blog:checked~nav label.blog { color: #fff; }
+  #blog:checked~nav .slider { left: 50%; }
+  input[type=radio] { display: none; }
+  
+  th { background-color: #B71C1C !important; color: white !important; text-align: center; }
+  #myForm { background-color: #FFFDF0 !important; border: 1px solid #FFE082; }
+  #pagetb { background-color: #FFF5F5 !important; border: 1px solid #FFCDD2; }
+  .card { border: none; border-radius: 10px; box-shadow: 0 4px 10px rgba(0,0,0,0.08); overflow: hidden; }
+</style>
