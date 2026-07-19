@@ -56,11 +56,9 @@ function updateSlip(event, formObj) {
             confirmButtonColor: '#B71C1C',
             confirmButtonText: 'ตกลง'
           }).then((result) => {
-            if (result.isConfirmed) {
-              var currentSearchTxt = document.getElementById('searchText').value;
-              if(currentSearchTxt && currentSearchTxt.trim() !== "") {
-                 $('#btnMainSearch').click(); 
-              }
+            var searchInput = document.getElementById('searchText') || document.querySelector('.input1');
+            if(searchInput && searchInput.value.trim() !== "") {
+                $('#btnMainSearch').click(); 
             }
           });
       })
