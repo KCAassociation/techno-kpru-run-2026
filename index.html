@@ -153,7 +153,6 @@
                     <hr class="my-4" style="height:2px; background-color:black">
                     <div class="form-group mb-2"><label>ชื่อทีม/ชมรม</label><input type="text" class="form-control" id="team" name="team"></div>
                     
-                    <!-- [ปรับปรุงใหม่]: แทรกช่องเลือกระยะการแข่งขันเพื่อเป็นตัวกรองขั้นแรก -->
                     <div class="form-group mb-2">
                       <label>ระยะการแข่งขัน</label><span class="text-danger">*</span>
                       <select class="form-control" id="distance_filter" required onchange="filterRunningModels()">
@@ -163,7 +162,6 @@
                       </select>
                     </div>
 
-                    <!-- ช่องประเภทการแข่งขันเดิม: ล็อกไว้และจะเปลี่ยนค่าตัวเลือกภายในอัตโนมัติจากฟังก์ชัน JavaScript -->
                     <div class="form-group mb-2">
                       <label>ประเภทการแข่งขันรุ่นอายุ</label><span class="text-danger">*</span>
                       <select class="form-control" id="type_run" name="type_run" required>
@@ -172,17 +170,15 @@
                     </div>
 
                     <div class="row justify-content-center text-center mb-2">
-  <!-- 🚀 ปรับ col-12 เพื่อให้บนมือถือแสดงผลใหญ่เต็มตา พอดีจอ 100% และ col-md-6 บนหน้าจอคอม -->
-  <div class="col-12 col-md-6">
-    <div class="card" style="background-color: rgba(245, 245, 245, 0.4); border: 1px solid #ddd;">
-      <div class="card-body p-2">
-        <span class="fw-bold d-block mb-2" style="font-size: 15px;"><i class="fa-solid fa-shirt me-1 text-danger"></i> แบบเสื้อโครงการ</span>
-        <!-- ปรับ img-fluid เพื่อให้รูปขยายยืด-หดตามขนาดหน้าจอมือถือทุกรุ่นอัตโนมัติ -->
-        <img class="img-fluid rounded shadow-sm" src="https://lh3.googleusercontent.com/d/1ZtTGUBLo9vhXxWni8FVHULMqSg-4DA6G" alt="แบบเสื้อ" style="width: 100%; max-height: 400px; object-fit: contain;">
-      </div>
-    </div>
-  </div>
-</div>
+                      <div class="col-12 col-md-6">
+                        <div class="card" style="background-color: rgba(245, 245, 245, 0.4); border: 1px solid #ddd;">
+                          <div class="card-body p-2">
+                            <span class="fw-bold d-block mb-2" style="font-size: 15px;"><i class="fa-solid fa-shirt me-1 text-danger"></i> แบบเสื้อโครงการ</span>
+                            <img class="img-fluid rounded shadow-sm" src="https://lh3.googleusercontent.com/d/1S-oHryEtfMoKQUSZ5kXPtfAFVZ946eCx" alt="แบบเสื้อ" style="width: 100%; max-height: 400px; object-fit: contain;">
+                          </div>
+                        </div>
+                      </div>
+                    </div>
 
                     <div class="form-group mb-2"><label>ขนาดเสื้อ</label><span class="text-danger">*</span><select class="form-control" id="size" name="size" required><option selected disabled value="">เลือกขนาดเสื้อ</option></select></div>
 
@@ -271,7 +267,6 @@
       }
     }
 
-    /** [ฟังก์ชันคำนวณและคัดกรองรุ่นการแข่งขันอัจฉริยะ - ปรับปรุงตัดรุ่น Open ออกตามสั่ง] */
     function filterRunningModels() {
       var gender = document.getElementById('gender').value;
       var yBirthStr = document.getElementById('y_birth').value.trim();
@@ -279,7 +274,6 @@
       var typeRunSelect = document.getElementById('type_run');
       
       if (!typeRunSelect) return;
-      
       if (!gender || !yBirthStr || yBirthStr.length !== 4 || !distance) {
         typeRunSelect.innerHTML = '<option selected disabled value="">กรุณากรอก เพศ, พ.ศ.เกิด และระยะวิ่งให้ครบก่อน</option>';
         return;
@@ -290,25 +284,16 @@
       
       var currentYear = 2569;
       var age = currentYear - yBirth;
-      
       var ageGroupText = "";
       
-      if (age <= 19) {
-        ageGroupText = "รุ่นอายุไม่เกิน 19 ปี";
-      } else if (age >= 20 && age <= 29) {
-        ageGroupText = "รุ่นอายุ 20-29 ปี";
-      } else if (age >= 30 && age <= 39) {
-        ageGroupText = "รุ่นอายุ 30-39 ปี";
-      } else if (age >= 40 && age <= 49) {
-        ageGroupText = "รุ่นอายุ 40-49 ปี";
-      } else if (age >= 50 && age <= 59) {
-        ageGroupText = "รุ่นอายุ 50-59 ปี";
-      } else if (age >= 60) {
-        ageGroupText = "รุ่นอายุ 60 ปีขึ้นไป";
-      }
+      if (age <= 19) { ageGroupText = "รุ่นอายุไม่เกิน 19 ปี"; } 
+      else if (age >= 20 && age <= 29) { ageGroupText = "รุ่นอายุ 20-29 ปี"; } 
+      else if (age >= 30 && age <= 39) { ageGroupText = "รุ่นอายุ 30-39 ปี"; } 
+      else if (age >= 40 && age <= 49) { ageGroupText = "รุ่นอายุ 40-49 ปี"; } 
+      else if (age >= 50 && age <= 59) { ageGroupText = "รุ่นอายุ 50-59 ปี"; } 
+      else if (age >= 60) { ageGroupText = "รุ่นอายุ 60 ปีขึ้นไป"; }
       
       var specificModel = distance + " กม. - " + ageGroupText + " " + gender;
-      
       typeRunSelect.innerHTML = '';
       
       var opt1 = document.createElement("option");
